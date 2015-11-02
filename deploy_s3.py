@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-from gevent import monkey; monkey.patch_all()
+from gevent import monkey
+monkey.patch_all()
 from gevent.pool import Pool
 import sys
 import json
@@ -8,12 +9,15 @@ import hashlib
 import boto
 from boto.s3.key import Key
 from furl import furl
-import fnmatch
 
 INPUT_DIR = './build'
 all_files = []
 bucket = None
 gpool = Pool(20)
+
+headers = {
+    'Cache-Control': 'public, max-age=86400',
+}
 
 
 def upload_maybe(fname):
@@ -46,9 +50,8 @@ def upload_maybe(fname):
     return (url, uploaded)
 
 
-
 if __name__ == "__main__":
-    for dirpath, dirnames, files in os.walk(os.path.join(INPUT_DIR, "v2")):
+    for dirpath, dirnames, files in os.walk(os.path.join(INPUT_DIR, "v0")):
         if len(files):
             for f in files:
                 filepath = os.path.join(dirpath, f)
@@ -65,17 +68,14 @@ if __name__ == "__main__":
 
     urls = []
 
-    headers = {
-        'Cache-Control': 'public, max-age=86400'
-    }
-
     process_count = 0
     tasks = gpool.imap_unordered(upload_maybe, all_files)
 
     for url, uploaded in tasks:
         urls.append((url, uploaded))
         process_count += 1
-        sys.stdout.write('\rprocessed file {} / {}'.format(process_count, upload_count))
+        sys.stdout.write('\rprocessed file {} / {}'.format(
+            process_count, upload_count))
         sys.stdout.flush()
 
     sys.stdout.write('\n')
