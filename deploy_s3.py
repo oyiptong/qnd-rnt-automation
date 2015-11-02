@@ -7,6 +7,7 @@ import json
 import os
 import hashlib
 import boto
+import copy
 from boto.s3.key import Key
 from furl import furl
 
@@ -33,9 +34,13 @@ def upload_maybe(fname):
     hsh = fname_md5.hexdigest()
 
     if key is None or key.md5 != hsh:
+        h = headers
+        if keyname.endswith('sw.js'):
+            h = copy.deepcopy(headers)
+            h['Service-Worker-Allowed'] = '/'
         key = Key(bucket)
         key.name = keyname
-        key.set_contents_from_filename(fname, headers=headers)
+        key.set_contents_from_filename(fname, headers=h)
         key.set_acl("public-read")
         uploaded = True
 
